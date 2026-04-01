@@ -1,0 +1,158 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="create-quiz-section glassmorphism">
+    <h2 class="section-title">Create Your Quiz</h2>
+    <form action="/create" method="POST" id="createQuizForm" class="quiz-form">
+        <div class="form-group">
+            <label for="title">Quiz Title</label>
+            <input type="text" id="title" name="title" placeholder="Enter Quiz Title" required>
+        </div>
+        <div class="form-group">
+            <label for="description">Quiz Description</label>
+            <textarea id="description" name="description" placeholder="A brief description for your quiz" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="timer">Timer (seconds per quiz)</label>
+            <input type="number" id="timer" name="timer" value="30" min="10" max="600" required>
+        </div>
+
+        <div class="questions-container">
+            <h3 class="subtitle">Questions</h3>
+            <div id="questionsList">
+                <!-- Questions will be added here via JS -->
+            </div>
+            <div class="add-btns">
+                <button type="button" class="btn btn-secondary" onclick="addQuestion('mcq')">+ Add MCQ</button>
+                <button type="button" class="btn btn-secondary" onclick="addQuestion('short')">+ Add Short Answer</button>
+            </div>
+        </div>
+
+        <input type="hidden" id="questions_json" name="questions_json" value="[]">
+
+        <div class="form-footer">
+            <button type="submit" class="btn btn-gradient">Publish Quiz</button>
+        </div>
+    </form>
+</section>
+
+<style>
+    .question-item {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        position: relative;
+    }
+    .question-item .remove-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: none;
+        border: none;
+        color: #ff4757;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    .option-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+    }
+    .option-group input {
+        flex: 1;
+    }
+</style>
+
+<script>
+    let questions = [];
+
+    function addQuestion(type) {
+        const id = Date.now();
+        const question = {
+            id: id,
+            type: type,
+            text: '',
+            options: type === 'mcq' ? ['', '', '', ''] : [],
+            answer: ''
+        };
+        questions.push(question);
+        renderQuestions();
+    }
+
+    function removeQuestion(id) {
+        questions = questions.filter(q => q.id !== id);
+        renderQuestions();
+    }
+
+    function updateQuestionText(id, text) {
+        const q = questions.find(q => q.id === id);
+        if (q) q.text = text;
+        updateHiddenInput();
+    }
+
+    function updateOption(id, index, val) {
+        const q = questions.find(q => q.id === id);
+        if (q) q.options[index] = val;
+        updateHiddenInput();
+    }
+
+    function updateAnswer(id, val) {
+        const q = questions.find(q => q.id === id);
+        if (q) q.answer = val;
+        updateHiddenInput();
+    }
+
+    function renderQuestions() {
+        const list = document.getElementById('questionsList');
+        list.innerHTML = '';
+        
+        questions.forEach((q, index) => {
+            const div = document.createElement('div');
+            div.className = 'question-item';
+            
+            let html = `
+                <button type="button" class="remove-btn" onclick="removeQuestion(${q.id})">Remove</button>
+                <div class="form-group">
+                    <label>Question ${index + 1} (${q.type.toUpperCase()})</label>
+                    <input type="text" placeholder="Enter Question" value="${q.text}" oninput="updateQuestionText(${q.id}, this.value)" required>
+                </div>
+            `;
+
+            if (q.type === 'mcq') {
+                html += '<div class="options-container"><label>Options</label>';
+                q.options.forEach((opt, optIndex) => {
+                    html += `
+                        <div class="option-group">
+                            <input type="text" placeholder="Option ${optIndex + 1}" value="${opt}" oninput="updateOption(${q.id}, ${optIndex}, this.value)" required>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+                html += `
+                    <div class="form-group" style="margin-top: 15px;">
+                        <label>Correct Answer (Exact text of the correct option)</label>
+                        <input type="text" placeholder="e.g. Option Text" value="${q.answer}" oninput="updateAnswer(${q.id}, this.value)" required>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="form-group">
+                        <label>Correct Answer (Exact Match)</label>
+                        <input type="text" placeholder="Enter the correct answer" value="${q.answer}" oninput="updateAnswer(${q.id}, this.value)" required>
+                    </div>
+                `;
+            }
+
+            div.innerHTML = html;
+            list.appendChild(div);
+        });
+        updateHiddenInput();
+    }
+
+    function updateHiddenInput() {
+        document.getElementById('questions_json').value = JSON.stringify(questions);
+    }
+</script>
+{% endblock %}

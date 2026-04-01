@@ -1,0 +1,79 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="take-quiz-section glassmorphism">
+    <div class="quiz-header">
+        <h2 class="gradient-text">{{ quiz.title }}</h2>
+        <div id="timerContainer" class="timer-container border-gradient">
+            <span id="timeLeft">{{ quiz.timer }}</span>s
+        </div>
+    </div>
+    
+    <form id="quizForm" action="{{ url_for('submit_quiz', quiz_id=quiz.id) }}" method="POST">
+        <div class="user-info-group">
+            <label for="userName">Enter Your Name to start:</label>
+            <input type="text" id="userName" name="userName" placeholder="Your Name" required>
+        </div>
+
+        <div class="questions-list">
+            {% for q in quiz.questions %}
+            <div class="question-block glass-card">
+                <p class="question-text"><strong>Question {{ loop.index }}:</strong> {{ q.text }}</p>
+                
+                <div class="answer-options">
+                    {% set q_idx = loop.index0 %}
+                    {% if q.type == 'mcq' %}
+                        {% for option in q.options %}
+                        <div class="option-item">
+                            <input type="radio" id="q{{ q_idx }}_opt{{ loop.index0 }}" name="question_{{ q_idx }}" value="{{ option }}" required>
+                            <label for="q{{ q_idx }}_opt{{ loop.index0 }}" class="option-label">
+                                <span>{{ option }}</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <input type="text" name="question_{{ q_idx }}" placeholder="Type your answer here..." class="short-answer-input" required>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="quiz-footer">
+            <button type="submit" class="btn btn-gradient btn-lg">Submit Quiz</button>
+        </div>
+    </form>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        let timeLeft = {{ quiz.timer }};
+        const timerElement = document.getElementById('timeLeft');
+        const form = document.getElementById('quizForm');
+        
+        const countdown = setInterval(() => {
+            timeLeft--;
+            timerElement.textContent = timeLeft;
+            
+            if (timeLeft <= 10) {
+                timerElement.parentElement.classList.add('timer-warning');
+            }
+            
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                alert('Time is up! Submitting your answers.');
+                form.submit();
+            }
+        }, 1000);
+        
+        // Prevent accidental page leave
+        window.onbeforeunload = function() {
+            return "Are you sure you want to leave? Your progress will be lost.";
+        };
+        
+        form.onsubmit = function() {
+            window.onbeforeunload = null;
+        };
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,78 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<section class="result-section glassmorphism">
+    <div class="result-header">
+        <h2 class="gradient-text">Quiz Complete!</h2>
+        <div class="score-card border-gradient">
+            <span class="score-text">{{ score }}</span>
+            <span class="total-text">/ {{ total }}</span>
+        </div>
+        <p class="congrats-text">Great job, <strong>{{ user_name }}</strong>!</p>
+    </div>
+
+    <div class="result-details">
+        <h3>Question Summary</h3>
+        <div class="question-results">
+            {% for res in results %}
+            <div class="question-result-item {{ 'correct' if res.is_correct else 'wrong' }}">
+                <div class="result-icon">
+                    {% if res.is_correct %}
+                        <span class="icon">✅</span>
+                    {% else %}
+                        <span class="icon">❌</span>
+                    {% endif %}
+                </div>
+                <div class="result-content">
+                    <p class="res-qText"><strong>Q{{ loop.index }}:</strong> {{ res.question }}</p>
+                    <p class="res-uAns">Your Answer: <span class="ans-value">{{ res.user_answer }}</span></p>
+                    {% if not res.is_correct %}
+                        <p class="res-cAns">Correct Answer: <span class="ans-value">{{ res.correct_answer }}</span></p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="leaderboard-section glass-card">
+        <h3>🏆 Top Leaderboard</h3>
+        <div id="leaderboardList" class="leaderboard-list">
+            <!-- Loaded via JS -->
+            <p>Loading leaderboard...</p>
+        </div>
+    </div>
+
+    <div class="result-actions">
+        <a href="/" class="btn btn-primary">Home</a>
+        <a href="{{ url_for('take_quiz', quiz_id=quiz.id) }}" class="btn btn-secondary">Retry Quiz</a>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        fetch('/leaderboard/{{ quiz.id }}')
+            .then(response => response.json())
+            .then(data => {
+                const list = document.getElementById('leaderboardList');
+                if (data.length === 0) {
+                    list.innerHTML = '<p>No results yet!</p>';
+                    return;
+                }
+                
+                let html = '<table class="leaderboard-table"><thead><tr><th>Rank</th><th>Name</th><th>Score</th></tr></thead><tbody>';
+                data.forEach((entry, index) => {
+                    html += `
+                        <tr class="${index === 0 ? 'top-rank' : ''}">
+                            <td>${index + 1}</td>
+                            <td>${entry.user_name}</td>
+                            <td>${entry.score} / ${entry.total}</td>
+                        </tr>
+                    `;
+                });
+                html += '</tbody></table>';
+                list.innerHTML = html;
+            });
+    });
+</script>
+{% endblock %}
